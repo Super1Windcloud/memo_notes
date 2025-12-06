@@ -81,7 +81,9 @@ export default function IntegrationDemo() {
 				<Card>
 					<CardHeader>
 						<CardTitle>Authentication</CardTitle>
-						<CardDescription>Plug in your auth provider of choice</CardDescription>
+						<CardDescription>
+							Plug in your auth provider of choice
+						</CardDescription>
 					</CardHeader>
 					<CardContent>
 						<p className="text-sm text-muted-foreground">

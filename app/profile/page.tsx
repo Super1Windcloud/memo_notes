@@ -23,7 +23,8 @@ export default function ProfilePage() {
 			bio: "Product-minded developer focused on fast iteration and clean UX.",
 			location: "San Francisco, CA",
 			joinedDate: "Jan 2023",
-			avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80",
+			avatar:
+				"https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80",
 		}),
 		[],
 	);
@@ -79,10 +80,7 @@ export default function ProfilePage() {
 					<Card>
 						<CardHeader className="items-center">
 							<Avatar className="h-32 w-32">
-								<AvatarImage
-									src={profile.avatar}
-									alt={profile.name}
-								/>
+								<AvatarImage src={profile.avatar} alt={profile.name} />
 								<AvatarFallback>{profile.name.charAt(0) || "U"}</AvatarFallback>
 							</Avatar>
 							<CardTitle className="text-2xl">
@@ -141,17 +139,15 @@ export default function ProfilePage() {
 
 								<div className="pt-4">
 									<div className="flex gap-2">
-										{domainBadges
-											.filter(Boolean)
-											.map(
-												(badge) =>
-													badge && (
-														<Badge key={badge.label} variant="secondary">
-															<badge.icon className="mr-1 h-3 w-3" />{" "}
-															{badge.label}
-														</Badge>
-													),
-											)}
+										{domainBadges.filter(Boolean).map(
+											(badge) =>
+												badge && (
+													<Badge key={badge.label} variant="secondary">
+														<badge.icon className="mr-1 h-3 w-3" />{" "}
+														{badge.label}
+													</Badge>
+												),
+										)}
 									</div>
 								</div>
 							</div>
