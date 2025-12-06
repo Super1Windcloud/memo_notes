@@ -1,12 +1,16 @@
 {
-  "name": "next-shadcn-template",
+  "name": "memo-note",
   "version": "0.1.0",
   "private": true,
   "author": "SuperWindcloud",
   "homepage": "https://github.com/Super1Windcloud",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Super1Windcloud/memo_notes.git"
+  },
   "scripts": {
     "taze": "npx taze major -w",
-    "dev": "next dev",
+    "dev": "next dev -p 3333",
     "build": "next build",
     "start": "pnpm build && next start",
     "clean": "npx rimraf node_modules",
@@ -86,6 +90,7 @@
     "eslint-config-next": "16.0.1",
     "husky": "^9.1.7",
     "jsdom": "^27.2.0",
+    "supabase": "^2.65.6",
     "tailwindcss": "^4.1.17",
     "tw-animate-css": "^1.4.0",
     "typescript": "^5.9.3",
