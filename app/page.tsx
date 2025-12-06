@@ -1,7 +1,19 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
 import { format, formatDistanceToNow } from "date-fns";
+import type { LucideIcon } from "lucide-react";
+import {
+	BookmarkCheck,
+	Filter,
+	Flame,
+	LayoutList,
+	Pin,
+	Search,
+	Sparkles,
+	Tag,
+	Wand2,
+} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,18 +28,6 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import type { LucideIcon } from "lucide-react";
-import {
-	BookmarkCheck,
-	Filter,
-	Flame,
-	LayoutList,
-	Pin,
-	Search,
-	Sparkles,
-	Tag,
-	Wand2,
-} from "lucide-react";
 
 type MemoCategory = "note" | "idea" | "task" | "journal";
 
@@ -131,8 +131,7 @@ const categoryAccent: Record<MemoCategory, string> = {
 	note: "bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-200",
 	idea: "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-200",
 	task: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-200",
-	journal:
-		"bg-sky-100 text-sky-700 dark:bg-sky-500/20 dark:text-sky-200",
+	journal: "bg-sky-100 text-sky-700 dark:bg-sky-500/20 dark:text-sky-200",
 };
 
 export default function Home() {
@@ -470,9 +469,7 @@ export default function Home() {
 														key={type}
 														type="button"
 														size="sm"
-														variant={
-															category === type ? "default" : "outline"
-														}
+														variant={category === type ? "default" : "outline"}
 														className="capitalize"
 														onClick={() => setCategory(type)}
 													>
@@ -636,9 +633,7 @@ export default function Home() {
 											<div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-300">
 												<div className="flex items-center gap-2">
 													<BookmarkCheck className="h-4 w-4" />
-													{memo.category === "task"
-														? "Actionable"
-														: "Noted"}
+													{memo.category === "task" ? "Actionable" : "Noted"}
 												</div>
 												<span className="font-medium text-slate-700 dark:text-slate-200">
 													{format(new Date(memo.createdAt), "MMM d, HH:mm")}

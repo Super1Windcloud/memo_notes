@@ -16,10 +16,9 @@ A modern, production-ready Next.js 16 template with shadcn/ui, Tailwind CSS, Typ
 - **Responsive Design** - Mobile-first approach with responsive breakpoints
 - **State Management** - Zustand for lightweight global state
 - **Data Fetching** - TanStack Query for server state management
-- **Authentication** - Next-Auth with multiple providers
 - **Database** - Supabase client for database operations
-- **Error Monitoring** - Sentry for error tracking and performance monitoring
 - **Testing** - Vitest with React Testing Library for unit tests
+- **Auth Ready** - UI placeholders for plugging in your preferred auth provider
 
 ## 🚀 Quick Start
 
@@ -45,17 +44,6 @@ pnpm install
 # Supabase
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-
-# Next-Auth
-AUTH_SECRET=your_auth_secret
-AUTH_GITHUB_ID=your_github_client_id
-AUTH_GITHUB_SECRET=your_github_client_secret
-AUTH_GOOGLE_ID=your_google_client_id
-AUTH_GOOGLE_SECRET=your_google_client_secret
-
-# Sentry (optional)
-SENTRY_DSN=your_sentry_dsn
-NEXT_PUBLIC_SENTRY_DSN=your_sentry_dsn
 ```
 
 4. Run the development server:
@@ -102,7 +90,6 @@ The template uses a modern oklch-based color system:
 ```
 ├── app/                           # Next.js App Router pages
 │   ├── api/                       # API routes
-│   │   └── auth/[...nextauth]/    # Next-Auth API route
 │   ├── dashboard/                 # Dashboard example page
 │   ├── data-fetching/             # Data fetching example page
 │   ├── form-handling/             # Form handling example page
@@ -113,25 +100,17 @@ The template uses a modern oklch-based color system:
 │   └── page.tsx                   # Home page
 ├── components/                    # React components
 │   ├── ui/                        # shadcn/ui components
-│   ├── NextAuthProvider.tsx       # Next-Auth provider wrapper
 │   └── QueryProvider.tsx          # TanStack Query provider wrapper
 ├── lib/                           # Utility functions
 │   ├── store/                     # Zustand stores
 │   │   └── counterStore.ts        # Example Zustand store
 │   ├── supabase-client.ts         # Supabase client configuration
-│   ├── nextauth.config.ts         # NextAuth configuration
-│   ├── auth.ts                    # Next-Auth utilities
 │   └── utils.ts                   # cn utility for class merging
 ├── hooks/                         # Custom React hooks
 │   └── use-mobile.ts              # Mobile detection hook
 ├── tests/                         # Test configuration
 │   └── setup.ts                   # Test setup file
-├── types/                         # TypeScript type definitions
-│   └── next-auth.d.ts             # Next-Auth type extensions
 ├── public/                        # Static assets
-├── sentry.client.config.ts        # Sentry client configuration
-├── sentry.edge.config.ts          # Sentry edge configuration
-├── sentry.server.config.ts        # Sentry server configuration
 ├── vitest.config.ts               # Vitest configuration
 └── .env.local                     # Environment variables (not committed)
 ```
@@ -142,11 +121,10 @@ The template includes several demonstration pages showcasing the integrated tech
 
 - **Home** (`/`) - Basic landing page
 - **Dashboard** (`/dashboard`) - Shows multiple components and data visualization
-- **User Profile** (`/profile`) - Authentication and profile management
+- **User Profile** (`/profile`) - Editable mock profile without auth
 - **Data Fetching** (`/data-fetching`) - TanStack Query features demonstration
 - **Form Handling** (`/form-handling`) - React Hook Form and Zod validation
-- **Integration Demo** (`/integration-demo`) - Overview of all integrated technologies
-- **Auth API** (`/api/auth/[...nextauth]`) - Next-Auth API routes
+- **Integration Demo** (`/integration-demo`) - Overview of integrated technologies (auth-ready placeholder)
 
 ## 🛠️ Customization
 
@@ -191,7 +169,7 @@ import { Heart, Settings, User } from 'lucide-react';
 This template includes several demo pages that showcase the integrated technologies:
 
 - **Dashboard** (`/dashboard`): Demonstrates multiple UI components, charts with Recharts, and state management with Zustand
-- **User Profile** (`/profile`): Shows authentication features with Next-Auth
+- **User Profile** (`/profile`): Editable profile UI without authentication
 - **Data Fetching** (`/data-fetching`): Shows TanStack Query features like queries, mutations, and caching
 - **Form Handling** (`/form-handling`): Demonstrates React Hook Form with Zod validation
 - **Integration Demo** (`/integration-demo`): Shows all integrated technologies working together
@@ -265,40 +243,12 @@ export default function Users() {
 }
 ```
 
-### Authentication with Next-Auth
+### Authentication
 
-Next-Auth is configured with GitHub and Google providers. To use it:
-
-1. Add environment variables in `.env.local`:
-```
-AUTH_SECRET=your_auth_secret
-AUTH_GITHUB_ID=your_github_client_id
-AUTH_GITHUB_SECRET=your_github_client_secret
-AUTH_GOOGLE_ID=your_google_client_id
-AUTH_GOOGLE_SECRET=your_google_client_secret
-```
-
-2. Use the auth functions in your components:
-```tsx
-import { useSession, signIn, signOut } from 'next-auth/react';
-
-export default function Component() {
-  const { data: session } = useSession();
-  
-  if (session) {
-    return (
-      <div>
-        <p>Signed in as {session.user?.email}</p>
-        <button onClick={() => signOut()}>Sign out</button>
-      </div>
-    );
-  }
-  
-  return (
-    <button onClick={() => signIn()}>Sign in</button>
-  );
-}
-```
+This template ships without an auth provider. The UI is ready for you to plug in
+your choice (Auth.js, Clerk, Supabase Auth, custom OAuth, etc.). Wrap the app
+in your provider in `app/layout.tsx` and replace the placeholder card in
+`app/integration-demo/page.tsx` with your implementation.
 
 ### Database with Supabase
 
@@ -311,15 +261,6 @@ import { supabase } from '@/lib/supabase-client';
 const { data, error } = await supabase
   .from('users')
   .select('*');
-```
-
-### Error Monitoring with Sentry
-
-Sentry is configured for client, server, and edge environments. To use Sentry in development, add your DSN to your environment variables:
-
-```env
-SENTRY_DSN=your_sentry_dsn
-NEXT_PUBLIC_SENTRY_DSN=your_sentry_dsn
 ```
 
 ### Testing with Vitest
@@ -368,8 +309,7 @@ This template is compatible with all major deployment platforms including Netlif
 
 When deploying, ensure you set the following environment variables:
 - For Supabase: `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- For Next-Auth: `AUTH_SECRET`, `AUTH_GITHUB_ID`, `AUTH_GITHUB_SECRET`, etc.
-- For Sentry: `SENTRY_DSN` and `NEXT_PUBLIC_SENTRY_DSN` (optional)
+- Add any auth provider variables you introduce
 
 ## 🤝 Contributing
 
@@ -388,9 +328,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Lucide](https://lucide.dev) - Beautiful & consistent icons
 - [Zustand](https://zustand-demo.pmnd.rs/) - State management
 - [TanStack Query](https://tanstack.com/query) - Server state management
-- [Next-Auth](https://authjs.dev/) - Authentication
 - [Supabase](https://supabase.com) - Database
-- [Sentry](https://sentry.io) - Error monitoring
 - [Vitest](https://vitest.dev) - Testing
 
 ## ⚠️ Known Issues

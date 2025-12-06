@@ -20,14 +20,6 @@ vi.mock("@tanstack/react-query", () => ({
 	})),
 }));
 
-vi.mock("next-auth/react", () => ({
-	useSession: vi.fn(() => ({
-		data: null, // No session for this test
-	})),
-	signIn: vi.fn(),
-	signOut: vi.fn(),
-}));
-
 vi.mock("@/lib/supabase-client", () => ({
 	supabase: {
 		from: vi.fn(() => ({
@@ -47,7 +39,7 @@ describe("IntegrationDemo", () => {
 		expect(screen.getByText("Integration Demo")).toBeInTheDocument();
 		expect(screen.getByText("Zustand State Management")).toBeInTheDocument();
 		expect(screen.getByText("TanStack Query")).toBeInTheDocument();
-		expect(screen.getByText("Next-Auth Authentication")).toBeInTheDocument();
+		expect(screen.getByText("Authentication")).toBeInTheDocument();
 		expect(screen.getByText("Supabase Integration")).toBeInTheDocument();
 	});
 

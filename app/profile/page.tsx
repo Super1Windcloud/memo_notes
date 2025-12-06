@@ -1,8 +1,7 @@
 "use client";
 
 import { Calendar, Chrome, Github, Mail, MapPin, Settings } from "lucide-react";
-import { signIn, signOut, useSession } from "next-auth/react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,46 +16,36 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export default function ProfilePage() {
-	const { data: session, status } = useSession();
+	const defaultProfile = useMemo(
+		() => ({
+			name: "Alex Carter",
+			email: "alex.carter@example.com",
+			bio: "Product-minded developer focused on fast iteration and clean UX.",
+			location: "San Francisco, CA",
+			joinedDate: "Jan 2023",
+			avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80",
+		}),
+		[],
+	);
+
 	const [isEditing, setIsEditing] = useState(false);
-	const [profile, setProfile] = useState({
-		name: session?.user?.name || "",
-		email: session?.user?.email || "",
-		bio: "Software developer passionate about building great products",
-		location: "San Francisco, CA",
-		joinedDate: "Jan 2023",
-	});
-
-	if (status === "loading") {
-		return (
-			<div className="container mx-auto py-10 flex items-center justify-center">
-				<p>Loading profile...</p>
-			</div>
-		);
-	}
-
-	if (!session) {
-		return (
-			<div className="container mx-auto py-10">
-				<Card className="max-w-md mx-auto">
-					<CardHeader>
-						<CardTitle>Sign In Required</CardTitle>
-						<CardDescription>Sign in to view your profile</CardDescription>
-					</CardHeader>
-					<CardContent>
-						<Button onClick={() => signIn()} className="w-full">
-							Sign In with Next-Auth
-						</Button>
-					</CardContent>
-				</Card>
-			</div>
-		);
-	}
+	const [profile, setProfile] = useState(defaultProfile);
+	const domainBadges = useMemo(
+		() => [
+			profile.email.includes("github") && { icon: Github, label: "GitHub" },
+			profile.email.includes("gmail") && { icon: Chrome, label: "Google" },
+		],
+		[profile.email],
+	);
 
 	const handleSave = () => {
 		setIsEditing(false);
-		// In a real app, you would save the profile data to your database
 		alert("Profile updated successfully!");
+	};
+
+	const handleReset = () => {
+		setProfile(defaultProfile);
+		setIsEditing(false);
 	};
 
 	return (
@@ -72,13 +61,15 @@ export default function ProfilePage() {
 							<Button onClick={handleSave}>Save Changes</Button>
 						</>
 					) : (
-						<Button onClick={() => setIsEditing(true)}>
-							<Settings className="mr-2 h-4 w-4" /> Edit Profile
-						</Button>
+						<div className="flex gap-2">
+							<Button onClick={() => setIsEditing(true)}>
+								<Settings className="mr-2 h-4 w-4" /> Edit Profile
+							</Button>
+							<Button variant="outline" onClick={handleReset}>
+								Reset
+							</Button>
+						</div>
 					)}
-					<Button variant="outline" onClick={() => signOut()}>
-						Sign Out
-					</Button>
 				</div>
 			</div>
 
@@ -89,12 +80,10 @@ export default function ProfilePage() {
 						<CardHeader className="items-center">
 							<Avatar className="h-32 w-32">
 								<AvatarImage
-									src={session.user?.image || ""}
-									alt={session.user?.name || ""}
+									src={profile.avatar}
+									alt={profile.name}
 								/>
-								<AvatarFallback>
-									{session.user?.name?.charAt(0) || "U"}
-								</AvatarFallback>
+								<AvatarFallback>{profile.name.charAt(0) || "U"}</AvatarFallback>
 							</Avatar>
 							<CardTitle className="text-2xl">
 								{isEditing ? (
@@ -106,7 +95,7 @@ export default function ProfilePage() {
 										className="text-center"
 									/>
 								) : (
-									session.user?.name
+									profile.name
 								)}
 							</CardTitle>
 							<CardDescription>
@@ -119,7 +108,7 @@ export default function ProfilePage() {
 										className="text-center"
 									/>
 								) : (
-									session.user?.email
+									profile.email
 								)}
 							</CardDescription>
 						</CardHeader>
@@ -127,7 +116,7 @@ export default function ProfilePage() {
 							<div className="flex flex-col space-y-4">
 								<div className="flex items-center">
 									<Mail className="mr-2 h-4 w-4 opacity-70" />
-									<span className="text-sm">{session.user?.email}</span>
+									<span className="text-sm">{profile.email}</span>
 								</div>
 								<div className="flex items-center">
 									<MapPin className="mr-2 h-4 w-4 opacity-70" />
@@ -152,16 +141,17 @@ export default function ProfilePage() {
 
 								<div className="pt-4">
 									<div className="flex gap-2">
-										{session.user?.email?.includes("github") && (
-											<Badge variant="secondary">
-												<Github className="mr-1 h-3 w-3" /> GitHub
-											</Badge>
-										)}
-										{session.user?.email?.includes("gmail") && (
-											<Badge variant="secondary">
-												<Chrome className="mr-1 h-3 w-3" /> Google
-											</Badge>
-										)}
+										{domainBadges
+											.filter(Boolean)
+											.map(
+												(badge) =>
+													badge && (
+														<Badge key={badge.label} variant="secondary">
+															<badge.icon className="mr-1 h-3 w-3" />{" "}
+															{badge.label}
+														</Badge>
+													),
+											)}
 									</div>
 								</div>
 							</div>

@@ -1,7 +1,6 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { signIn, signOut, useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import {
 	Card,
@@ -21,7 +20,6 @@ const fetchExampleData = async () => {
 
 export default function IntegrationDemo() {
 	const { count, increment, decrement, reset } = useCounterStore();
-	const { data: session } = useSession();
 
 	const {
 		data: exampleData,
@@ -79,30 +77,27 @@ export default function IntegrationDemo() {
 					</CardContent>
 				</Card>
 
-				{/* Next-Auth Example */}
+				{/* Auth Placeholder */}
 				<Card>
 					<CardHeader>
-						<CardTitle>Next-Auth Authentication</CardTitle>
-						<CardDescription>
-							Secure authentication with multiple providers
-						</CardDescription>
+						<CardTitle>Authentication</CardTitle>
+						<CardDescription>Plug in your auth provider of choice</CardDescription>
 					</CardHeader>
 					<CardContent>
-						{session ? (
-							<div>
-								<p>Signed in as: {session.user?.email}</p>
-								<Button onClick={() => signOut()} className="mt-2">
-									Sign Out
-								</Button>
-							</div>
-						) : (
-							<div>
-								<p>Not authenticated</p>
-								<Button onClick={() => signIn()} className="mt-2">
-									Sign In
-								</Button>
-							</div>
-						)}
+						<p className="text-sm text-muted-foreground">
+							This template no longer bundles NextAuth. Add your preferred
+							provider (Clerk, Auth.js, Supabase Auth, etc.) and wrap your app
+							accordingly.
+						</p>
+						<Button variant="outline" className="mt-3" asChild>
+							<a
+								href="https://nextjs.org/docs/app/building-your-application/authentication"
+								target="_blank"
+								rel="noreferrer"
+							>
+								View auth options
+							</a>
+						</Button>
 					</CardContent>
 				</Card>
 
