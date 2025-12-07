@@ -357,7 +357,11 @@ const uiCopy: Record<
 		};
 		menu: {
 			copyContent: string;
-			editToInput: string;
+			editInline: string;
+			editContentPrompt: string;
+			editTagsPrompt: string;
+			saveInline: string;
+			cancelInline: string;
 		};
 		dateRange: {
 			all: string;
@@ -486,14 +490,18 @@ const uiCopy: Record<
 			noted: "Noted",
 			itemsSuffix: "items",
 		},
-		menu: {
-			copyContent: "Copy content",
-			editToInput: "Edit into composer",
-		},
-		dateRange: {
-			all: "All time",
-			fromPrefix: "From",
-			untilPrefix: "Until",
+	menu: {
+		copyContent: "Copy content",
+		editInline: "Edit memo",
+		editContentPrompt: "Edit memo content",
+		editTagsPrompt: "Update tags (comma-separated)",
+		saveInline: "Save changes",
+		cancelInline: "Cancel",
+	},
+	dateRange: {
+		all: "All time",
+		fromPrefix: "From",
+		untilPrefix: "Until",
 		},
 	},
 	zh: {
@@ -607,14 +615,18 @@ const uiCopy: Record<
 			noted: "已记录",
 			itemsSuffix: "条",
 		},
-		menu: {
-			copyContent: "复制内容",
-			editToInput: "编辑到输入区",
-		},
-		dateRange: {
-			all: "全部时间",
-			fromPrefix: "自",
-			untilPrefix: "截至",
+	menu: {
+		copyContent: "复制内容",
+		editInline: "直接编辑笔记",
+		editContentPrompt: "编辑笔记内容",
+		editTagsPrompt: "更新标签（用逗号分隔）",
+		saveInline: "保存修改",
+		cancelInline: "取消",
+	},
+	dateRange: {
+		all: "全部时间",
+		fromPrefix: "自",
+		untilPrefix: "截至",
 		},
 	},
 };
@@ -634,6 +646,9 @@ export default function Home() {
 	const [hydrated, setHydrated] = useState(false);
 	const [accent, setAccent] = useState<AccentKey>("indigo");
 	const [language, setLanguage] = useState<LanguageOption>("en");
+	const [editingMemoId, setEditingMemoId] = useState<string | null>(null);
+	const [editingContent, setEditingContent] = useState("");
+	const [editingTagsInput, setEditingTagsInput] = useState("");
 
 	useEffect(() => {
 		const saved = window.localStorage.getItem(STORAGE_KEY);
@@ -776,11 +791,38 @@ export default function Home() {
 	};
 
 	const handleEditMemo = (memo: Memo) => {
-		setContent(memo.content);
-		setTagsInput(memo.tags.join(", "));
-		setCategory(memo.category);
-		setPinned(memo.pinned);
-		window.scrollTo({ top: 0, behavior: "smooth" });
+		setEditingMemoId(memo.id);
+		setEditingContent(memo.content);
+		setEditingTagsInput(memo.tags.join(", "));
+	};
+
+	const handleCancelEdit = () => {
+		setEditingMemoId(null);
+		setEditingContent("");
+		setEditingTagsInput("");
+	};
+
+	const handleUpdateMemo = () => {
+		if (!editingMemoId) return;
+		const trimmedContent = editingContent.trim();
+		if (!trimmedContent) return;
+		const updatedTags = editingTagsInput
+			.split(",")
+			.map((tag) => tag.trim())
+			.filter(Boolean);
+		setMemos((prev) =>
+			prev.map((item) =>
+				item.id === editingMemoId
+					? {
+							...item,
+							content: trimmedContent,
+							tags: updatedTags,
+							createdAt: new Date().toISOString(),
+						}
+					: item,
+			),
+		);
+		handleCancelEdit();
 	};
 
 	const handleCopy = async (text: string) => {
@@ -1259,103 +1301,153 @@ export default function Home() {
 										</p>
 									</div>
 								) : (
-									<div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-										{filteredMemos.map((memo) => (
-											<div
-												key={memo.id}
-												className="flex h-full flex-col rounded-2xl border bg-white/80 px-4 py-4 shadow-sm ring-1 ring-slate-200/60 transition hover:-translate-y-1 hover:shadow-md dark:border-white/10 dark:bg-white/5 dark:ring-white/5"
-											>
-												<div className="flex flex-wrap items-center justify-between gap-3">
-													<div className="flex items-center gap-2">
-														<span
-															className={cn(
-																"inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold capitalize",
-																categoryAccent[memo.category],
-															)}
-														>
-															{localizedCopy.categoryLabels[memo.category]}
-														</span>
-														{memo.pinned ? (
-															<span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-1 text-xs font-medium text-amber-800 dark:bg-amber-500/20 dark:text-amber-100">
-																<Pin className="h-3 w-3" />
-																{localizedCopy.memoList.pinned}
-															</span>
-														) : null}
-													</div>
-													<div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-300">
-														<CalendarIcon className="h-4 w-4" />
-														<span>
-															{formatDistanceToNow(new Date(memo.createdAt), {
-																addSuffix: true,
-															})}
-														</span>
-														<DropdownMenu>
-															<DropdownMenuTrigger asChild>
-																<Button
-																	variant="ghost"
-																	size="icon"
-																	className="h-8 w-8 text-slate-500 hover:text-slate-900 dark:text-slate-200 dark:hover:text-white"
-																	aria-label="更多操作"
-																>
-																	<MoreHorizontal className="h-4 w-4" />
-																</Button>
-															</DropdownMenuTrigger>
-															<DropdownMenuContent align="end">
-																<DropdownMenuItem
-																	className="gap-2"
-																	onClick={() => handleCopy(memo.content)}
-																>
-																	<Copy className="h-4 w-4" />
-																	{localizedCopy.menu.copyContent}
-																</DropdownMenuItem>
-																<DropdownMenuItem
-																	className="gap-2"
-																	onClick={() => handleEditMemo(memo)}
-																>
-																	<Edit className="h-4 w-4" />
-																	{localizedCopy.menu.editToInput}
-																</DropdownMenuItem>
-															</DropdownMenuContent>
-														</DropdownMenu>
-													</div>
-												</div>
-												<div className="mt-3 flex-1 text-sm leading-relaxed text-slate-800 dark:text-slate-100 [&>*]:mb-3 [&>*:last-child]:mb-0 [&_code]:rounded-md [&_code]:bg-slate-100 [&_code]:px-1.5 [&_code]:py-0.5 [&_pre]:overflow-x-auto [&_pre]:rounded-xl [&_pre]:bg-slate-100 [&_pre]:p-3 dark:[&_code]:bg-white/10 dark:[&_pre]:bg-white/5">
-													<ReactMarkdown remarkPlugins={[remarkGfm]}>
-														{memo.content}
-													</ReactMarkdown>
-												</div>
-												<div className="mt-3 flex flex-wrap items-center gap-2">
-													{memo.tags.length === 0 ? (
-														<Badge variant="outline" className="text-xs">
-															{localizedCopy.memoList.noTags}
-														</Badge>
-													) : (
-														memo.tags.map((tag) => (
-															<Badge
-																key={tag}
-																variant="secondary"
-																className="flex items-center gap-1 text-xs capitalize"
+									<div className="grid grid-cols-1 gap-4">
+										{filteredMemos.map((memo) => {
+											const isEditing = editingMemoId === memo.id;
+											return (
+												<div
+													key={memo.id}
+													className="flex h-full flex-col rounded-2xl border bg-white/80 px-4 py-4 shadow-sm ring-1 ring-slate-200/60 transition hover:-translate-y-1 hover:shadow-md dark:border-white/10 dark:bg-white/5 dark:ring-white/5"
+												>
+													<div className="flex flex-wrap items-center justify-between gap-3">
+														<div className="flex items-center gap-2">
+															<span
+																className={cn(
+																	"inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold capitalize",
+																	categoryAccent[memo.category],
+																)}
 															>
-																<Tag className="h-3 w-3" />
-																{tag}
-															</Badge>
-														))
-													)}
-												</div>
-												<Separator className="my-3" />
-												<div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-300">
-													<div className="flex items-center gap-2">
-														<BookmarkCheck className="h-4 w-4" />
-														{memo.category === "task"
-															? localizedCopy.memoList.actionable
-															: localizedCopy.memoList.noted}
+																{localizedCopy.categoryLabels[memo.category]}
+															</span>
+															{memo.pinned ? (
+																<span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-1 text-xs font-medium text-amber-800 dark:bg-amber-500/20 dark:text-amber-100">
+																	<Pin className="h-3 w-3" />
+																	{localizedCopy.memoList.pinned}
+																</span>
+															) : null}
+														</div>
+														<div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-300">
+															<CalendarIcon className="h-4 w-4" />
+															<span>
+																{formatDistanceToNow(new Date(memo.createdAt), {
+																	addSuffix: true,
+																})}
+															</span>
+															<DropdownMenu>
+																<DropdownMenuTrigger asChild>
+																	<Button
+																		variant="ghost"
+																		size="icon"
+																		className="h-8 w-8 text-slate-500 hover:text-slate-900 dark:text-slate-200 dark:hover:text-white"
+																		aria-label="更多操作"
+																	>
+																		<MoreHorizontal className="h-4 w-4" />
+																	</Button>
+																</DropdownMenuTrigger>
+																<DropdownMenuContent align="end">
+																	<DropdownMenuItem
+																		className="gap-2"
+																		onClick={() => handleCopy(memo.content)}
+																	>
+																		<Copy className="h-4 w-4" />
+																		{localizedCopy.menu.copyContent}
+																	</DropdownMenuItem>
+																	<DropdownMenuItem
+																		className="gap-2"
+																		onClick={() => handleEditMemo(memo)}
+																	>
+																		<Edit className="h-4 w-4" />
+																		{localizedCopy.menu.editInline}
+																	</DropdownMenuItem>
+																</DropdownMenuContent>
+															</DropdownMenu>
+														</div>
 													</div>
-													<span className="font-medium text-slate-700 dark:text-slate-200">
-														{format(new Date(memo.createdAt), "MMM d, HH:mm")}
-													</span>
+													<div className="mt-3 flex-1">
+														{isEditing ? (
+															<div className="space-y-3">
+																<Textarea
+																	value={editingContent}
+																	onChange={(event) =>
+																		setEditingContent(event.target.value)
+																	}
+																	className="min-h-[140px] text-sm"
+																/>
+																<div className="space-y-1">
+																	<p className="text-xs font-medium text-slate-600 dark:text-slate-300">
+																		{localizedCopy.composer.tagsLabel}
+																	</p>
+																	<Input
+																		value={editingTagsInput}
+																		onChange={(event) =>
+																			setEditingTagsInput(event.target.value)
+																		}
+																		placeholder={localizedCopy.composer.tagsPlaceholder}
+																		className="text-sm"
+																	/>
+																</div>
+															</div>
+														) : (
+															<div className="text-sm leading-relaxed text-slate-800 dark:text-slate-100 [&>*]:mb-3 [&>*:last-child]:mb-0 [&_a]:text-indigo-600 [&_a]:underline dark:[&_a]:text-indigo-300 [&_blockquote]:border-l-4 [&_blockquote]:border-slate-200 [&_blockquote]:pl-3 dark:[&_blockquote]:border-white/10 [&_code]:rounded-md [&_code]:bg-slate-100 [&_code]:px-1.5 [&_code]:py-0.5 [&_h1]:text-xl [&_h1]:font-semibold [&_h2]:text-lg [&_h2]:font-semibold [&_h3]:text-base [&_h3]:font-semibold [&_li]:mb-1 [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:leading-relaxed [&_pre]:overflow-x-auto [&_pre]:rounded-xl [&_pre]:bg-slate-100 [&_pre]:p-3 [&_ul]:list-disc [&_ul]:pl-5 dark:[&_code]:bg-white/10 dark:[&_pre]:bg-white/5">
+																<ReactMarkdown remarkPlugins={[remarkGfm]}>
+																	{memo.content}
+																</ReactMarkdown>
+															</div>
+														)}
+													</div>
+													{isEditing ? (
+														<div className="mt-3 flex items-center gap-2">
+															<Button
+																size="sm"
+																onClick={handleUpdateMemo}
+																disabled={!editingContent.trim()}
+															>
+																{localizedCopy.menu.saveInline}
+															</Button>
+															<Button
+																type="button"
+																variant="ghost"
+																size="sm"
+																onClick={handleCancelEdit}
+															>
+																{localizedCopy.menu.cancelInline}
+															</Button>
+														</div>
+													) : (
+														<div className="mt-3 flex flex-wrap items-center gap-2">
+															{memo.tags.length === 0 ? (
+																<Badge variant="outline" className="text-xs">
+																	{localizedCopy.memoList.noTags}
+																</Badge>
+															) : (
+																memo.tags.map((tag) => (
+																	<Badge
+																		key={tag}
+																		variant="secondary"
+																		className="flex items-center gap-1 text-xs capitalize"
+																	>
+																		<Tag className="h-3 w-3" />
+																		{tag}
+																	</Badge>
+																))
+															)}
+														</div>
+													)}
+													<Separator className="my-3" />
+													<div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-300">
+														<div className="flex items-center gap-2">
+															<BookmarkCheck className="h-4 w-4" />
+															{memo.category === "task"
+																? localizedCopy.memoList.actionable
+																: localizedCopy.memoList.noted}
+														</div>
+														<span className="font-medium text-slate-700 dark:text-slate-200">
+															{format(new Date(memo.createdAt), "MMM d, HH:mm")}
+														</span>
+													</div>
 												</div>
-											</div>
-										))}
+											);
+										})}
 									</div>
 								)}
 							</CardContent>
