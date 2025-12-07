@@ -6,7 +6,7 @@ Memo Notes is a focused memo board built with Next.js 16 + React 19 and shadcn/u
 
 - Fast capture form with categories (note/idea/task/journal), tags, pinning, and quick templates
 - Live stream with search, tag picker, and category filters; sorted by freshness and pinned on top
-- LocalStorage persistence plus a one-click reset back to the demo dataset
+- Supabase persistence for memos and Typora drafts, plus a one-click reset that re-seeds Supabase
 - Snapshot cards for totals, pinned count, and open tasks, updated in real time
 - Responsive layout and dark mode-ready styling powered by Tailwind CSS v4 and Geist fonts
 
@@ -50,9 +50,9 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 
 ## Data & Persistence
 
-- Memos persist to `localStorage` under the `memos-demo` key
-- Use “Reset to demo” in the header to restore the seeded examples
-- No backend is required; bring your own Supabase/project APIs by wiring data fetching into the existing TanStack Query provider
+- Memos (create/edit/pin) now live in Supabase table `memos`; Typora drafts auto-save to `drafts` (row id `typora-main`); theme/language preferences live in `preferences` (row id `global`).
+- Apply the schema in `supabase/migrations/20241207190000_add_memos_and_persistence.sql` (e.g., `pnpm backend` to start Supabase locally, then `npx supabase db reset` to apply migrations).
+- “Reset to demo” now clears the `memos` table and re-seeds the demo dataset inside Supabase.
 
 ## Testing & Quality
 

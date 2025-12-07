@@ -97,6 +97,16 @@ const deleteUser = async (id: number): Promise<void> => {
 	});
 };
 
+const utcDateFormatter = new Intl.DateTimeFormat("en-US", {
+	timeZone: "UTC",
+	year: "numeric",
+	month: "2-digit",
+	day: "2-digit",
+});
+
+const formatUtcDate = (value: string | number | Date) =>
+	utcDateFormatter.format(new Date(value));
+
 export default function DataFetchingPage() {
 	const [userId, setUserId] = useState<string>("");
 	const [searchTerm, setSearchTerm] = useState<string>("");
@@ -311,7 +321,7 @@ export default function DataFetchingPage() {
 										<h3 className="text-sm font-medium text-muted-foreground">
 											Created
 										</h3>
-										<p>{new Date(user.created_at).toLocaleDateString()}</p>
+										<p>{formatUtcDate(user.created_at)}</p>
 									</div>
 								</div>
 							</div>
@@ -362,7 +372,7 @@ export default function DataFetchingPage() {
 												</Badge>
 											</TableCell>
 											<TableCell>
-												{new Date(user.created_at).toLocaleDateString()}
+												{formatUtcDate(user.created_at)}
 											</TableCell>
 											<TableCell className="text-right">
 												<div className="flex justify-end gap-2">

@@ -13,18 +13,31 @@ import {
 	Calendar as CalendarIcon,
 	Copy,
 	Edit,
+	ExternalLink,
 	Filter,
 	Flame,
+	Hash,
+	Link2,
 	LayoutList,
 	MoreHorizontal,
 	Pin,
 	Search,
 	Sparkles,
 	Tag,
+	UploadCloud,
 	Wand2,
 	Palette,
 } from "lucide-react";
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useRouter } from "next/navigation";
+import {
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+	useCallback,
+	type CSSProperties,
+	type ChangeEvent,
+} from "react";
 import ReactMarkdown from "react-markdown";
 import { type DateRange } from "react-day-picker";
 import remarkGfm from "remark-gfm";
@@ -54,6 +67,7 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/lib/supabase-client";
 
 type MemoCategory = "note" | "idea" | "task" | "journal";
 
@@ -68,7 +82,9 @@ type Memo = {
 
 type FilterValue = "all" | "pinned" | "tasks" | "ideas" | "journal" | "notes";
 
-const STORAGE_KEY = "memos-demo";
+const PREFERENCE_ROW_ID = "global";
+const DEFAULT_ACCENT: AccentKey = "indigo";
+const DEFAULT_LANGUAGE: LanguageOption = "en";
 
 const demoMemos: Memo[] = [
 	{
@@ -108,6 +124,16 @@ const demoMemos: Memo[] = [
 		createdAt: "2024-04-28T06:00:00.000Z",
 	},
 ];
+
+type SupabaseMemoRow = {
+	id: string;
+	content: string;
+	tags: string[] | null;
+	category: MemoCategory;
+	pinned: boolean;
+	created_at: string;
+	updated_at?: string | null;
+};
 
 const filterOptions: {
 	value: FilterValue;
@@ -339,6 +365,13 @@ const uiCopy: Record<
 			journalSeedTemplate: TemplatePreset;
 			taskSeedLabel: string;
 			taskSeedTemplate: TemplatePreset;
+			quickActionsLabel: string;
+			quickActionsHint: string;
+			tagActionLabel: string;
+			linkActionLabel: string;
+			uploadActionLabel: string;
+			typoraActionLabel: string;
+			linkPrompt: string;
 		};
 		memoList: {
 			title: string;
@@ -473,6 +506,13 @@ const uiCopy: Record<
 				category: "task",
 				pinned: true,
 			},
+			quickActionsLabel: "Quick actions",
+			quickActionsHint: "Capture tags, links, files, or jump to a focused editor.",
+			tagActionLabel: "Add #tag",
+			linkActionLabel: "Insert link",
+			uploadActionLabel: "Attach file from device",
+			typoraActionLabel: "Open Typora-like page",
+			linkPrompt: "Paste a link to drop into your note",
 		},
 		memoList: {
 			title: "Memo cards",
@@ -599,6 +639,13 @@ const uiCopy: Record<
 				category: "task",
 				pinned: true,
 			},
+			quickActionsLabel: "快速操作",
+			quickActionsHint: "一键补标签、放入链接、上传文件，或进入沉浸写作页。",
+			tagActionLabel: "标签",
+			linkActionLabel: "插入链接",
+			uploadActionLabel: "上传本地文件",
+			typoraActionLabel: "前往 Typora 风格页面",
+			linkPrompt: "粘贴你要插入的链接",
 		},
 		memoList: {
 			title: "笔记卡片",
@@ -631,10 +678,9 @@ const uiCopy: Record<
 	},
 };
 
-const PREFERENCE_KEY = "memos-preferences";
-
 export default function Home() {
-	const [memos, setMemos] = useState<Memo[]>(demoMemos);
+	const router = useRouter();
+	const [memos, setMemos] = useState<Memo[]>([]);
 	const [content, setContent] = useState("");
 	const [tagsInput, setTagsInput] = useState("");
 	const [category, setCategory] = useState<MemoCategory>("note");
@@ -643,52 +689,118 @@ export default function Home() {
 	const [activeTag, setActiveTag] = useState<string | null>(null);
 	const [search, setSearch] = useState("");
 	const [dateRange, setDateRange] = useState<DateRange | undefined>();
-	const [hydrated, setHydrated] = useState(false);
-	const [accent, setAccent] = useState<AccentKey>("indigo");
-	const [language, setLanguage] = useState<LanguageOption>("en");
+	const [accent, setAccent] = useState<AccentKey>(DEFAULT_ACCENT);
+	const [language, setLanguage] = useState<LanguageOption>(DEFAULT_LANGUAGE);
 	const [editingMemoId, setEditingMemoId] = useState<string | null>(null);
 	const [editingContent, setEditingContent] = useState("");
 	const [editingTagsInput, setEditingTagsInput] = useState("");
+	const [preferencesLoaded, setPreferencesLoaded] = useState(false);
+	const [isLoading, setIsLoading] = useState(true);
+	const [isSaving, setIsSaving] = useState(false);
+	const [isUpdating, setIsUpdating] = useState(false);
+	const [isResetting, setIsResetting] = useState(false);
+	const [errorMessage, setErrorMessage] = useState<string | null>(null);
+	const [isHydrated, setIsHydrated] = useState(false);
+	const tagsInputRef = useRef<HTMLInputElement>(null);
+	const fileInputRef = useRef<HTMLInputElement>(null);
+	const localizedCopy = uiCopy[language];
 
-	useEffect(() => {
-		const saved = window.localStorage.getItem(STORAGE_KEY);
-		if (saved) {
-			setMemos(JSON.parse(saved));
+	const mapRowToMemo = useCallback(
+		(row: SupabaseMemoRow): Memo => ({
+			id: row.id,
+			content: row.content,
+			tags: row.tags ?? [],
+			category: row.category,
+			pinned: row.pinned,
+			createdAt: row.created_at,
+		}),
+		[],
+	);
+
+	const loadPreferences = useCallback(async () => {
+		const { data, error } = await supabase
+			.from("preferences")
+			.select("accent, language")
+			.eq("id", PREFERENCE_ROW_ID)
+			.maybeSingle();
+
+		if (error) {
+			setPreferencesLoaded(true);
+			return;
 		}
-		const savedPreferences = window.localStorage.getItem(PREFERENCE_KEY);
-		if (savedPreferences) {
-			try {
-				const parsed = JSON.parse(savedPreferences) as {
-					accent?: AccentKey;
-					language?: LanguageOption;
-				};
-				if (parsed.accent) {
-					setAccent(parsed.accent);
-				}
-				if (parsed.language) {
-					setLanguage(parsed.language);
-				}
-			} catch {
-				// no-op if preferences are malformed
+
+		if (data) {
+			if (
+				data.accent &&
+				(Object.keys(themePresets) as AccentKey[]).includes(
+					data.accent as AccentKey,
+				)
+			) {
+				setAccent(data.accent as AccentKey);
 			}
+			if (
+				data.language &&
+				(["en", "zh"] as LanguageOption[]).includes(
+					data.language as LanguageOption,
+				)
+			) {
+				setLanguage(data.language as LanguageOption);
+			}
+		} else {
+			// Seed a default row so subsequent loads don't 406 on .single().
+			void supabase.from("preferences").upsert({
+				id: PREFERENCE_ROW_ID,
+				accent: DEFAULT_ACCENT,
+				language: DEFAULT_LANGUAGE,
+				updated_at: new Date().toISOString(),
+			});
 		}
-		setHydrated(true);
+		setPreferencesLoaded(true);
 	}, []);
 
 	useEffect(() => {
-		if (hydrated) {
-			window.localStorage.setItem(STORAGE_KEY, JSON.stringify(memos));
-		}
-	}, [memos, hydrated]);
+		loadPreferences().catch(() => setPreferencesLoaded(true));
+	}, [loadPreferences]);
 
 	useEffect(() => {
-		if (hydrated) {
-			window.localStorage.setItem(
-				PREFERENCE_KEY,
-				JSON.stringify({ accent, language }),
-			);
+		// Defer time-dependent formatting to the client to avoid hydration mismatches.
+		setIsHydrated(true);
+	}, []);
+
+	useEffect(() => {
+		if (!preferencesLoaded) return;
+		void supabase.from("preferences").upsert({
+			id: PREFERENCE_ROW_ID,
+			accent,
+			language,
+			updated_at: new Date().toISOString(),
+		});
+	}, [accent, language, preferencesLoaded]);
+
+	const loadMemos = useCallback(async () => {
+		setIsLoading(true);
+		setErrorMessage(null);
+		const { data, error } = await supabase
+			.from("memos")
+			.select("*")
+			.order("created_at", { ascending: false });
+
+		if (error) {
+			setErrorMessage("无法从 Supabase 读取数据，显示示例内容。");
+			setMemos(demoMemos);
+		} else if (data) {
+			setMemos(data.map(mapRowToMemo));
 		}
-	}, [accent, language, hydrated]);
+		setIsLoading(false);
+	}, [mapRowToMemo]);
+
+	useEffect(() => {
+		loadMemos().catch(() => {
+			setErrorMessage("读取数据时发生错误，显示示例内容。");
+			setMemos(demoMemos);
+			setIsLoading(false);
+		});
+	}, [loadMemos]);
 
 	const tagUsage = useMemo(() => {
 		const counter = new Map<string, number>();
@@ -761,26 +873,86 @@ export default function Home() {
 			);
 	}, [memos, filter, search, activeTag, dateRange]);
 
-	const handleSave = () => {
-		if (!content.trim()) return;
+	const handleSave = async () => {
+		if (!content.trim() || isSaving) return;
+		setIsSaving(true);
+		setErrorMessage(null);
 		const normalizedTags = tagsInput
 			.split(",")
 			.map((tag) => tag.trim())
 			.filter(Boolean);
-		const nextMemo: Memo = {
-			id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
-			content: content.trim(),
-			tags: normalizedTags,
-			category,
-			pinned,
-			createdAt: new Date().toISOString(),
-		};
+		const { data, error } = await supabase
+			.from("memos")
+			.insert({
+				content: content.trim(),
+				tags: normalizedTags,
+				category,
+				pinned,
+				created_at: new Date().toISOString(),
+				updated_at: new Date().toISOString(),
+			})
+			.select()
+			.single();
+		if (error || !data) {
+			setErrorMessage("保存失败，请稍后重试。");
+			setIsSaving(false);
+			return;
+		}
 
-		setMemos((prev) => [nextMemo, ...prev]);
+		setMemos((prev) => [mapRowToMemo(data), ...prev]);
 		setContent("");
 		setTagsInput("");
 		setPinned(false);
 		setCategory("note");
+		setIsSaving(false);
+	};
+
+	const handleTagShortcut = () => {
+		setTagsInput((prev) => {
+			if (!prev.trim()) return "#";
+			if (prev.trim().startsWith("#")) return prev;
+			return `#${prev}`;
+		});
+		window.requestAnimationFrame(() => {
+			const input = tagsInputRef.current;
+			if (input) {
+				input.focus();
+				const position = input.value.length;
+				input.setSelectionRange(position, position);
+			}
+		});
+	};
+
+	const handleLinkInsert = () => {
+		const url = window.prompt(
+			localizedCopy.composer.linkPrompt,
+			"https://",
+		);
+		if (!url) return;
+		const trimmed = url.trim();
+		if (!trimmed) return;
+		setContent((prev) => {
+			const spacer = prev.length === 0 || prev.endsWith(" ") ? "" : " ";
+			return `${prev}${spacer}[${trimmed}](${trimmed})`;
+		});
+	};
+
+	const handleUploadClick = () => {
+		fileInputRef.current?.click();
+	};
+
+	const handleFilesSelected = (event: ChangeEvent<HTMLInputElement>) => {
+		const files = event.target.files;
+		if (!files?.length) return;
+		const markdownLinks = Array.from(files).map(
+			(file) => `- [${file.name}](local-upload)`,
+		);
+		setContent((prev) => `${prev}${prev ? "\n" : ""}${markdownLinks.join("\n")}`);
+		event.target.value = "";
+	};
+
+	const handleOpenTypora = () => {
+		router.push("/typora");
 	};
 
 	const handleTemplate = (template: Partial<Memo>) => {
@@ -802,25 +974,33 @@ export default function Home() {
 		setEditingTagsInput("");
 	};
 
-	const handleUpdateMemo = () => {
-		if (!editingMemoId) return;
+	const handleUpdateMemo = async () => {
+		if (!editingMemoId || isUpdating) return;
 		const trimmedContent = editingContent.trim();
 		if (!trimmedContent) return;
+		setIsUpdating(true);
+		setErrorMessage(null);
 		const updatedTags = editingTagsInput
 			.split(",")
 			.map((tag) => tag.trim())
 			.filter(Boolean);
+		const { data, error } = await supabase
+			.from("memos")
+			.update({
+				content: trimmedContent,
+				tags: updatedTags,
+				updated_at: new Date().toISOString(),
+			})
+			.eq("id", editingMemoId)
+			.select()
+			.single();
+		setIsUpdating(false);
+		if (error || !data) {
+			setErrorMessage("更新失败，请稍后再试。");
+			return;
+		}
 		setMemos((prev) =>
-			prev.map((item) =>
-				item.id === editingMemoId
-					? {
-							...item,
-							content: trimmedContent,
-							tags: updatedTags,
-							createdAt: new Date().toISOString(),
-						}
-					: item,
-			),
+			prev.map((item) => (item.id === editingMemoId ? mapRowToMemo(data) : item)),
 		);
 		handleCancelEdit();
 	};
@@ -834,8 +1014,48 @@ export default function Home() {
 		}
 	};
 
-	const resetDemo = () => {
-		setMemos(demoMemos);
+	const resetDemo = async () => {
+		setIsResetting(true);
+		setErrorMessage(null);
+		const { error: deleteError } = await supabase
+			.from("memos")
+			.delete()
+			.neq("id", "");
+
+		if (deleteError) {
+			setErrorMessage("重置失败，请检查 Supabase 权限。");
+			setIsResetting(false);
+			return;
+		}
+
+		const { data, error: insertError } = await supabase
+			.from("memos")
+			.insert(
+				demoMemos.map((memo) => ({
+					content: memo.content,
+					tags: memo.tags,
+					category: memo.category,
+					pinned: memo.pinned,
+					created_at: memo.createdAt,
+					updated_at: memo.createdAt,
+				})),
+			)
+			.select();
+
+		if (insertError || !data) {
+			setErrorMessage("重置失败，稍后再试。");
+			setIsResetting(false);
+			return;
+		}
+
+		const sorted = data
+			.map(mapRowToMemo)
+			.sort(
+				(a, b) =>
+					new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+			);
+
+		setMemos(sorted);
 		setContent("");
 		setTagsInput("");
 		setPinned(false);
@@ -844,13 +1064,19 @@ export default function Home() {
 		setActiveTag(null);
 		setSearch("");
 		setDateRange(undefined);
+		setIsResetting(false);
 	};
 
 	const activeTheme = themePresets[accent];
-	const localizedCopy = uiCopy[language];
 	const activeFilterLabel =
 		localizedCopy.search.filterOptions[filter]?.label ??
 		localizedCopy.search.filterOptions.all.label;
+	const relativeTime = (date: string) =>
+		isHydrated
+			? formatDistanceToNow(new Date(date), { addSuffix: true })
+			: "...";
+	const absoluteTime = (date: string) =>
+		isHydrated ? format(new Date(date), "MMM d, HH:mm") : "--:--";
 
 	return (
 		<div
@@ -892,6 +1118,7 @@ export default function Home() {
 								className="gap-2"
 								type="button"
 								onClick={resetDemo}
+								disabled={isResetting}
 							>
 								<LayoutList className="h-4 w-4" />
 								{localizedCopy.actions.reset}
@@ -912,6 +1139,12 @@ export default function Home() {
 						</div>
 					</div>
 				</header>
+
+				{errorMessage ? (
+					<div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 shadow-sm dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100">
+						{errorMessage}
+					</div>
+				) : null}
 
 				<div className="grid grid-cols-1 gap-6 lg:grid-cols-10 lg:items-start xl:grid-cols-10">
 					<aside className="space-y-4 lg:sticky lg:top-8 lg:col-span-3">
@@ -1170,6 +1403,69 @@ export default function Home() {
 									rows={4}
 									className="resize-none bg-white/90 text-base dark:bg-white/5"
 								/>
+								<div className="flex flex-wrap items-center justify-between gap-3">
+									<div className="flex items-center gap-2">
+										<span className="text-xs font-medium text-slate-500 dark:text-slate-300">
+											{localizedCopy.composer.quickActionsLabel}
+										</span>
+										<div className="inline-flex items-center gap-1 rounded-full border bg-white/80 px-2 py-1.5 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/5">
+											<Button
+												type="button"
+												size="icon"
+												variant="ghost"
+												className="h-8 w-8 text-slate-600 hover:text-slate-900 dark:text-slate-200 dark:hover:text-white"
+												onClick={handleTagShortcut}
+												aria-label={localizedCopy.composer.tagActionLabel}
+												title={localizedCopy.composer.tagActionLabel}
+											>
+												<Hash className="h-4 w-4" />
+											</Button>
+											<Button
+												type="button"
+												size="icon"
+												variant="ghost"
+												className="h-8 w-8 text-slate-600 hover:text-slate-900 dark:text-slate-200 dark:hover:text-white"
+												onClick={handleLinkInsert}
+												aria-label={localizedCopy.composer.linkActionLabel}
+												title={localizedCopy.composer.linkActionLabel}
+											>
+												<Link2 className="h-4 w-4" />
+											</Button>
+											<Button
+												type="button"
+												size="icon"
+												variant="ghost"
+												className="h-8 w-8 text-slate-600 hover:text-slate-900 dark:text-slate-200 dark:hover:text-white"
+												onClick={handleUploadClick}
+												aria-label={localizedCopy.composer.uploadActionLabel}
+												title={localizedCopy.composer.uploadActionLabel}
+											>
+												<UploadCloud className="h-4 w-4" />
+											</Button>
+											<Button
+												type="button"
+												size="icon"
+												variant="ghost"
+												className="h-8 w-8 text-slate-600 hover:text-slate-900 dark:text-slate-200 dark:hover:text-white"
+												onClick={handleOpenTypora}
+												aria-label={localizedCopy.composer.typoraActionLabel}
+												title={localizedCopy.composer.typoraActionLabel}
+											>
+												<ExternalLink className="h-4 w-4" />
+											</Button>
+										</div>
+									</div>
+									<p className="text-[11px] text-slate-500 dark:text-slate-300">
+										{localizedCopy.composer.quickActionsHint}
+									</p>
+								</div>
+								<input
+									ref={fileInputRef}
+									type="file"
+									multiple
+									onChange={handleFilesSelected}
+									className="hidden"
+								/>
 								<div className="grid gap-3 md:grid-cols-3">
 									<div className="space-y-1">
 										<p className="text-xs font-medium text-slate-500 dark:text-slate-300">
@@ -1200,6 +1496,7 @@ export default function Home() {
 											placeholder={localizedCopy.composer.tagsPlaceholder}
 											value={tagsInput}
 											onChange={(event) => setTagsInput(event.target.value)}
+											ref={tagsInputRef}
 										/>
 									</div>
 									<div className="flex items-center justify-between rounded-xl border bg-white/70 px-4 py-3 dark:border-white/10 dark:bg-white/5">
@@ -1250,11 +1547,11 @@ export default function Home() {
 									<Button
 										type="button"
 										className="gap-2"
-										disabled={!content.trim()}
+										disabled={!content.trim() || isSaving}
 										onClick={handleSave}
 									>
 										<Sparkles className="h-4 w-4" />
-										{localizedCopy.composer.save}
+										{isSaving ? "保存中..." : localizedCopy.composer.save}
 									</Button>
 								</div>
 							</CardContent>
@@ -1292,7 +1589,12 @@ export default function Home() {
 										<span>{dateRangeLabel}</span>
 									</div>
 								</div>
-								{filteredMemos.length === 0 ? (
+								{isLoading ? (
+									<div className="flex items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-100/60 px-4 py-6 text-center text-sm text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-200">
+										<CalendarIcon className="mr-2 h-4 w-4" />
+										正在从 Supabase 加载数据...
+									</div>
+								) : filteredMemos.length === 0 ? (
 									<div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-100/60 px-4 py-6 text-center text-sm text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-200">
 										<Sparkles className="h-5 w-5" />
 										<p>{localizedCopy.memoList.empty}</p>
@@ -1329,9 +1631,7 @@ export default function Home() {
 														<div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-300">
 															<CalendarIcon className="h-4 w-4" />
 															<span>
-																{formatDistanceToNow(new Date(memo.createdAt), {
-																	addSuffix: true,
-																})}
+																{relativeTime(memo.createdAt)}
 															</span>
 															<DropdownMenu>
 																<DropdownMenuTrigger asChild>
@@ -1400,9 +1700,11 @@ export default function Home() {
 															<Button
 																size="sm"
 																onClick={handleUpdateMemo}
-																disabled={!editingContent.trim()}
+																disabled={!editingContent.trim() || isUpdating}
 															>
-																{localizedCopy.menu.saveInline}
+																{isUpdating
+																	? "保存中..."
+																	: localizedCopy.menu.saveInline}
 															</Button>
 															<Button
 																type="button"
@@ -1442,7 +1744,7 @@ export default function Home() {
 																: localizedCopy.memoList.noted}
 														</div>
 														<span className="font-medium text-slate-700 dark:text-slate-200">
-															{format(new Date(memo.createdAt), "MMM d, HH:mm")}
+															{absoluteTime(memo.createdAt)}
 														</span>
 													</div>
 												</div>
