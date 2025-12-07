@@ -64,5 +64,6 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 - Designed for Vercel/Next.js hosting; any platform that runs `next start` after `pnpm build` works
 - Remember to set production env vars (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, plus any new ones you add)
 
-#ScreenShot
+# Screenshot
+
 ![img](./img.png)
