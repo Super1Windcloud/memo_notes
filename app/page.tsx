@@ -111,44 +111,30 @@ const demoMemos: Memo[] = [
 
 const filterOptions: {
 	value: FilterValue;
-	label: string;
-	description: string;
 	icon: LucideIcon;
 }[] = [
 	{
 		value: "all",
-		label: "All memos",
-		description: "Every memo you captured",
 		icon: LayoutList,
 	},
 	{
 		value: "pinned",
-		label: "Pinned",
-		description: "Quick access to anchors",
 		icon: Pin,
 	},
 	{
 		value: "tasks",
-		label: "Tasks",
-		description: "Actionable items and checklists",
 		icon: BookmarkCheck,
 	},
 	{
 		value: "ideas",
-		label: "Ideas",
-		description: "Sparks worth exploring",
 		icon: Sparkles,
 	},
 	{
 		value: "journal",
-		label: "Journal",
-		description: "Daily reflections",
 		icon: Flame,
 	},
 	{
 		value: "notes",
-		label: "Notes",
-		description: "Plain notes without ceremony",
 		icon: Tag,
 	},
 ];
@@ -278,16 +264,106 @@ const themePresets: Record<AccentKey, ThemePreset> = {
 
 type LanguageOption = "en" | "zh";
 
-const preferenceCopy: Record<
+type TemplatePreset = Pick<Memo, "content" | "tags" | "category" | "pinned">;
+
+const uiCopy: Record<
 	LanguageOption,
 	{
 		bubble: string;
 		headline: string;
 		subhead: string;
-		preferences: string;
-		preferencesHint: string;
-		themeLabel: string;
-		languageLabel: string;
+		preferences: {
+			title: string;
+			hint: string;
+			themeLabel: string;
+			languageLabel: string;
+			badge: string;
+			languageNames: Record<LanguageOption, string>;
+		};
+		categoryLabels: Record<MemoCategory, string>;
+		actions: {
+			reset: string;
+			quickMemo: {
+				label: string;
+				template: TemplatePreset;
+			};
+		};
+		search: {
+			title: string;
+			description: string;
+			placeholder: string;
+			filterOptions: Record<
+				FilterValue,
+				{
+					label: string;
+					description: string;
+				}
+			>;
+		};
+		calendar: {
+			title: string;
+			description: string;
+			currentRange: string;
+			select: string;
+			today: string;
+			last7: string;
+			clear: string;
+		};
+		tags: {
+			title: string;
+			description: string;
+			empty: string;
+		};
+		pulse: {
+			title: string;
+			description: string;
+			totalTitle: string;
+			totalHint: string;
+			pinnedTitle: string;
+			pinnedHint: string;
+			tasksTitle: string;
+			tasksHint: string;
+		};
+		composer: {
+			title: string;
+			description: string;
+			autosave: string;
+			placeholder: string;
+			categoryLabel: string;
+			tagsLabel: string;
+			tagsPlaceholder: string;
+			pinTitle: string;
+			pinHint: string;
+			save: string;
+			journalSeedLabel: string;
+			journalSeedTemplate: TemplatePreset;
+			taskSeedLabel: string;
+			taskSeedTemplate: TemplatePreset;
+		};
+		memoList: {
+			title: string;
+			description: string;
+			filterLabel: string;
+			tagLabel: string;
+			dateLabel: string;
+			allTagsLabel: string;
+			empty: string;
+			emptyHint: string;
+			noTags: string;
+			pinned: string;
+			actionable: string;
+			noted: string;
+			itemsSuffix: string;
+		};
+		menu: {
+			copyContent: string;
+			editToInput: string;
+		};
+		dateRange: {
+			all: string;
+			fromPrefix: string;
+			untilPrefix: string;
+		};
 	}
 > = {
 	en: {
@@ -295,19 +371,251 @@ const preferenceCopy: Record<
 		headline: "Memos, but streamlined",
 		subhead:
 			"Capture small thoughts, tag them instantly, and keep a tidy stream of memos without breaking flow.",
-		preferences: "Preferences",
-		preferencesHint: "Pick a theme color and language you like.",
-		themeLabel: "Theme colors",
-		languageLabel: "Language",
+		preferences: {
+			title: "Preferences",
+			hint: "Pick a theme color and language you like.",
+			themeLabel: "Theme colors",
+			languageLabel: "Language",
+			badge: "EN",
+			languageNames: {
+				en: "English",
+				zh: "中文",
+			},
+		},
+		categoryLabels: {
+			note: "Note",
+			idea: "Idea",
+			task: "Task",
+			journal: "Journal",
+		},
+		actions: {
+			reset: "Reset to demo",
+			quickMemo: {
+				label: "Drop a quick memo",
+				template: {
+					content: "Quick note: sketch the onboarding checklist.",
+					tags: ["note", "capture"],
+					category: "note",
+					pinned: false,
+				},
+			},
+		},
+		search: {
+			title: "Search & filters",
+			description:
+				"Search, calendar, and tags on the left; cards update instantly on the right.",
+			placeholder: "Search content or #tag",
+			filterOptions: {
+				all: { label: "All memos", description: "Every memo you captured" },
+				pinned: { label: "Pinned", description: "Quick access to anchors" },
+				tasks: {
+					label: "Tasks",
+					description: "Actionable items and checklists",
+				},
+				ideas: { label: "Ideas", description: "Sparks worth exploring" },
+				journal: {
+					label: "Journal",
+					description: "Daily reflections",
+				},
+				notes: { label: "Notes", description: "Plain notes without ceremony" },
+			},
+		},
+		calendar: {
+			title: "Calendar filter",
+			description: "Filter notes by a time window.",
+			currentRange: "Current range",
+			select: "Select",
+			today: "Today",
+			last7: "Last 7 days",
+			clear: "Clear",
+		},
+		tags: {
+			title: "Tag filter",
+			description: "Pick a tag to narrow results; click again to reset.",
+			empty: "No tags yet—add one when saving.",
+		},
+		pulse: {
+			title: "Pulse",
+			description: "Lightweight snapshot to gauge filtered volume.",
+			totalTitle: "All memos",
+			totalHint: "stored locally",
+			pinnedTitle: "Pinned",
+			pinnedHint: "anchors",
+			tasksTitle: "Tasks",
+			tasksHint: "waiting",
+		},
+		composer: {
+			title: "Quick capture",
+			description: "Type, tag, and drop a memo without leaving the keyboard.",
+			autosave: "Autosaves to your browser",
+			placeholder: "Write a thought, link, or checklist...",
+			categoryLabel: "Category",
+			tagsLabel: "Tags",
+			tagsPlaceholder: "product, focus, idea",
+			pinTitle: "Pin on top",
+			pinHint: "Keep this memo in view",
+			save: "Save memo",
+			journalSeedLabel: "Journal seed",
+			journalSeedTemplate: {
+				content: "Today I learned: small commits keep me shipping.",
+				tags: ["journal", "learning"],
+				category: "journal",
+				pinned: false,
+			},
+			taskSeedLabel: "Pin a task",
+			taskSeedTemplate: {
+				content: "Task: close the feedback loop for the next memo drop.",
+				tags: ["task", "follow-up"],
+				category: "task",
+				pinned: true,
+			},
+		},
+		memoList: {
+			title: "Memo cards",
+			description:
+				"Left-side search and filters apply instantly; cards on the right refresh live.",
+			filterLabel: "Filter",
+			tagLabel: "Tag",
+			dateLabel: "Date range",
+			allTagsLabel: "All tags",
+			empty: "No matching notes",
+			emptyHint: "Try adjusting search or filters on the left.",
+			noTags: "No tags",
+			pinned: "Pinned",
+			actionable: "Actionable",
+			noted: "Noted",
+			itemsSuffix: "items",
+		},
+		menu: {
+			copyContent: "Copy content",
+			editToInput: "Edit into composer",
+		},
+		dateRange: {
+			all: "All time",
+			fromPrefix: "From",
+			untilPrefix: "Until",
+		},
 	},
 	zh: {
 		bubble: "实时便签板",
 		headline: "轻量化的便签流",
 		subhead: "随手记录想法、即时打标签，在流畅的界面里保持节奏。",
-		preferences: "偏好设置",
-		preferencesHint: "选择喜欢的主题配色和界面语言。",
-		themeLabel: "主题配色",
-		languageLabel: "语言",
+		preferences: {
+			title: "偏好设置",
+			hint: "选择喜欢的主题配色和界面语言。",
+			themeLabel: "主题配色",
+			languageLabel: "语言",
+			badge: "中文",
+			languageNames: {
+				en: "英语",
+				zh: "中文",
+			},
+		},
+		categoryLabels: {
+			note: "笔记",
+			idea: "想法",
+			task: "任务",
+			journal: "日记",
+		},
+		actions: {
+			reset: "重置到示例",
+			quickMemo: {
+				label: "快速生成一条笔记",
+				template: {
+					content: "快速记录：草拟一份新手引导清单。",
+					tags: ["note", "capture"],
+					category: "note",
+					pinned: false,
+				},
+			},
+		},
+		search: {
+			title: "搜索与筛选",
+			description: "左侧集中搜索、日历筛选和标签筛选，右侧即时刷新卡片。",
+			placeholder: "搜索内容或 #标签",
+			filterOptions: {
+				all: { label: "全部", description: "所有记录的笔记" },
+				pinned: { label: "置顶", description: "随时取用的重要事项" },
+				tasks: { label: "任务", description: "可执行的待办或清单" },
+				ideas: { label: "想法", description: "灵感与探索" },
+				journal: { label: "日记", description: "日常记录与反思" },
+				notes: { label: "笔记", description: "轻量的纯笔记" },
+			},
+		},
+		calendar: {
+			title: "日历筛选",
+			description: "按时间窗口过滤帖子/笔记。",
+			currentRange: "当前区间",
+			select: "选择",
+			today: "今天",
+			last7: "最近7天",
+			clear: "清除",
+		},
+		tags: {
+			title: "标签筛选",
+			description: "选择一个标签收敛结果，再次点击可清空。",
+			empty: "暂无标签，保存时添加即可。",
+		},
+		pulse: {
+			title: "统计快照",
+			description: "轻量级的统计快照，帮助确认筛选后的体量。",
+			totalTitle: "全部笔记",
+			totalHint: "本地存储",
+			pinnedTitle: "置顶",
+			pinnedHint: "锚点",
+			tasksTitle: "任务",
+			tasksHint: "待处理",
+		},
+		composer: {
+			title: "快速记录",
+			description: "输入、打标签，快速落下一条笔记。",
+			autosave: "自动保存在浏览器",
+			placeholder: "写下想法、链接或清单...",
+			categoryLabel: "类别",
+			tagsLabel: "标签",
+			tagsPlaceholder: "产品, 专注, 想法",
+			pinTitle: "置顶",
+			pinHint: "让它一直在视野里",
+			save: "保存笔记",
+			journalSeedLabel: "日记模板",
+			journalSeedTemplate: {
+				content: "今天学到：小步提交能帮我持续交付。",
+				tags: ["journal", "learning"],
+				category: "journal",
+				pinned: false,
+			},
+			taskSeedLabel: "置顶任务",
+			taskSeedTemplate: {
+				content: "任务：闭环本周的反馈，准备下次笔记发布。",
+				tags: ["task", "follow-up"],
+				category: "task",
+				pinned: true,
+			},
+		},
+		memoList: {
+			title: "笔记卡片",
+			description: "左侧的搜索与筛选会实时作用，右侧卡片即时刷新。",
+			filterLabel: "筛选",
+			tagLabel: "标签",
+			dateLabel: "日期区间",
+			allTagsLabel: "所有标签",
+			empty: "没有匹配的笔记",
+			emptyHint: "尝试调整左侧搜索或筛选。",
+			noTags: "暂无标签",
+			pinned: "置顶",
+			actionable: "可执行",
+			noted: "已记录",
+			itemsSuffix: "条",
+		},
+		menu: {
+			copyContent: "复制内容",
+			editToInput: "编辑到输入区",
+		},
+		dateRange: {
+			all: "全部时间",
+			fromPrefix: "自",
+			untilPrefix: "截至",
+		},
 	},
 };
 
@@ -387,17 +695,18 @@ export default function Home() {
 	);
 
 	const dateRangeLabel = useMemo(() => {
+		const rangeCopy = uiCopy[language].dateRange;
 		if (!dateRange?.from && !dateRange?.to) {
-			return "全部时间";
+			return rangeCopy.all;
 		}
 		if (dateRange?.from && dateRange?.to) {
 			return `${format(dateRange.from, "MMM d")} - ${format(dateRange.to, "MMM d")}`;
 		}
 		if (dateRange?.from) {
-			return `自 ${format(dateRange.from, "MMM d")}`;
+			return `${rangeCopy.fromPrefix} ${format(dateRange.from, "MMM d")}`;
 		}
-		return `截至 ${format(dateRange?.to as Date, "MMM d")}`;
-	}, [dateRange]);
+		return `${rangeCopy.untilPrefix} ${format(dateRange?.to as Date, "MMM d")}`;
+	}, [dateRange, language]);
 
 	const filteredMemos = useMemo(() => {
 		const query = search.trim().toLowerCase();
@@ -496,7 +805,10 @@ export default function Home() {
 	};
 
 	const activeTheme = themePresets[accent];
-	const localizedCopy = preferenceCopy[language];
+	const localizedCopy = uiCopy[language];
+	const activeFilterLabel =
+		localizedCopy.search.filterOptions[filter]?.label ??
+		localizedCopy.search.filterOptions.all.label;
 
 	return (
 		<div
@@ -540,7 +852,7 @@ export default function Home() {
 								onClick={resetDemo}
 							>
 								<LayoutList className="h-4 w-4" />
-								Reset to demo
+								{localizedCopy.actions.reset}
 							</Button>
 							<Button
 								className="gap-2"
@@ -548,34 +860,33 @@ export default function Home() {
 								type="button"
 								onClick={() =>
 									handleTemplate({
-										content: "Quick note: sketch the onboarding checklist.",
-										tags: ["note", "capture"],
-										category: "note",
-										pinned: false,
+										...localizedCopy.actions.quickMemo.template,
 									})
 								}
 							>
 								<Wand2 className="h-4 w-4" />
-								Drop a quick memo
+								{localizedCopy.actions.quickMemo.label}
 							</Button>
 						</div>
 					</div>
 				</header>
 
-				<div className="grid gap-6 lg:grid-cols-[360px,1fr]">
-					<aside className="space-y-4">
+				<div className="grid grid-cols-1 gap-6 lg:grid-cols-10 lg:items-start xl:grid-cols-10">
+					<aside className="space-y-4 lg:sticky lg:top-8 lg:col-span-3">
 						<Card>
 							<CardHeader className="pb-4">
-								<CardTitle className="text-lg">搜索与筛选</CardTitle>
+								<CardTitle className="text-lg">
+									{localizedCopy.search.title}
+								</CardTitle>
 								<CardDescription>
-									左侧集中搜索、日历筛选和标签筛选，右侧即刻刷新列表。
+									{localizedCopy.search.description}
 								</CardDescription>
 							</CardHeader>
 							<CardContent className="space-y-4">
 								<div className="relative">
 									<Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
 									<Input
-										placeholder="搜索内容或 #标签"
+										placeholder={localizedCopy.search.placeholder}
 										value={search}
 										onChange={(event) => setSearch(event.target.value)}
 										className="pl-9"
@@ -584,6 +895,7 @@ export default function Home() {
 								<div className="grid gap-2 sm:grid-cols-2">
 									{filterOptions.map((option) => {
 										const active = filter === option.value;
+										const labels = localizedCopy.search.filterOptions[option.value];
 										return (
 											<button
 												key={option.value}
@@ -611,10 +923,10 @@ export default function Home() {
 												</span>
 												<span className="space-y-1">
 													<p className="text-sm font-semibold text-slate-900 dark:text-white">
-														{option.label}
+														{labels.label}
 													</p>
 													<p className="text-xs text-slate-500 transition group-hover:text-slate-600 dark:text-slate-300">
-														{option.description}
+														{labels.description}
 													</p>
 												</span>
 											</button>
@@ -628,15 +940,17 @@ export default function Home() {
 							<CardHeader className="pb-4">
 								<CardTitle className="flex items-center gap-2 text-lg">
 									<CalendarIcon className="h-4 w-4" />
-									日历筛选
+									{localizedCopy.calendar.title}
 								</CardTitle>
-								<CardDescription>按时间窗口过滤帖子/笔记。</CardDescription>
+								<CardDescription>
+									{localizedCopy.calendar.description}
+								</CardDescription>
 							</CardHeader>
 							<CardContent className="space-y-4">
 								<div className="flex items-center justify-between gap-3 rounded-xl border bg-white/70 px-3 py-3 dark:border-white/10 dark:bg-white/5">
 									<div>
 										<p className="text-xs font-medium text-slate-500 dark:text-slate-300">
-											当前区间
+											{localizedCopy.calendar.currentRange}
 										</p>
 										<p className="text-sm font-semibold text-slate-900 dark:text-white">
 											{dateRangeLabel}
@@ -649,7 +963,7 @@ export default function Home() {
 												<span className="text-xs font-semibold uppercase text-slate-700 dark:text-slate-200">
 													{dateRange?.from
 														? format(dateRange.from, "MM/dd")
-														: "选择"}
+														: localizedCopy.calendar.select}
 												</span>
 											</Button>
 										</PopoverTrigger>
@@ -676,7 +990,7 @@ export default function Home() {
 											})
 										}
 									>
-										今天
+										{localizedCopy.calendar.today}
 									</Button>
 									<Button
 										type="button"
@@ -689,7 +1003,7 @@ export default function Home() {
 											})
 										}
 									>
-										最近7天
+										{localizedCopy.calendar.last7}
 									</Button>
 									<Button
 										type="button"
@@ -697,7 +1011,7 @@ export default function Home() {
 										variant="outline"
 										onClick={() => setDateRange(undefined)}
 									>
-										清除
+										{localizedCopy.calendar.clear}
 									</Button>
 								</div>
 							</CardContent>
@@ -705,15 +1019,17 @@ export default function Home() {
 
 						<Card>
 							<CardHeader className="pb-4">
-								<CardTitle className="text-lg">标签筛选</CardTitle>
+								<CardTitle className="text-lg">
+									{localizedCopy.tags.title}
+								</CardTitle>
 								<CardDescription>
-									选择一个标签收敛结果，再次点击可清空。
+									{localizedCopy.tags.description}
 								</CardDescription>
 							</CardHeader>
 							<CardContent className="flex flex-wrap gap-2">
 								{tagUsage.length === 0 ? (
 									<p className="text-sm text-slate-500 dark:text-slate-300">
-										暂无标签，保存时添加即可。
+										{localizedCopy.tags.empty}
 									</p>
 								) : (
 									tagUsage.map(([tag, count]) => (
@@ -743,68 +1059,70 @@ export default function Home() {
 
 						<Card>
 							<CardHeader>
-								<CardTitle className="text-lg">Pulse</CardTitle>
+								<CardTitle className="text-lg">
+									{localizedCopy.pulse.title}
+								</CardTitle>
 								<CardDescription>
-									轻量级的统计快照，帮助确认筛选后的体量。
+									{localizedCopy.pulse.description}
 								</CardDescription>
 							</CardHeader>
 							<CardContent className="grid grid-cols-1 gap-3 sm:grid-cols-3">
 								<div className="rounded-xl border bg-white/70 px-4 py-3 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/5">
 									<p className="text-xs text-slate-500 dark:text-slate-300">
-										All memos
+										{localizedCopy.pulse.totalTitle}
 									</p>
 									<p className="text-2xl font-semibold text-slate-900 dark:text-white">
 										{stats.total}
 									</p>
 									<p className="text-xs text-slate-500 dark:text-slate-400">
-										stored locally
+										{localizedCopy.pulse.totalHint}
 									</p>
 								</div>
 								<div className="rounded-xl border bg-white/70 px-4 py-3 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/5">
 									<p className="text-xs text-slate-500 dark:text-slate-300">
-										Pinned
+										{localizedCopy.pulse.pinnedTitle}
 									</p>
 									<p className="text-2xl font-semibold text-slate-900 dark:text-white">
 										{stats.pinned}
 									</p>
 									<p className="text-xs text-slate-500 dark:text-slate-400">
-										anchors
+										{localizedCopy.pulse.pinnedHint}
 									</p>
 								</div>
 								<div className="rounded-xl border bg-white/70 px-4 py-3 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/5">
 									<p className="text-xs text-slate-500 dark:text-slate-300">
-										Tasks
+										{localizedCopy.pulse.tasksTitle}
 									</p>
 									<p className="text-2xl font-semibold text-slate-900 dark:text-white">
 										{stats.tasks}
 									</p>
 									<p className="text-xs text-slate-500 dark:text-slate-400">
-										waiting
+										{localizedCopy.pulse.tasksHint}
 									</p>
 								</div>
 							</CardContent>
 						</Card>
 					</aside>
 
-					<section className="space-y-5">
+					<section className="space-y-5 lg:col-span-7">
 						<Card className="border-0 bg-white/80 shadow-lg ring-1 ring-slate-200 backdrop-blur dark:border-white/10 dark:bg-white/5 dark:ring-white/5">
 							<CardHeader className="pb-3">
 								<div className="flex items-center justify-between gap-3">
 									<div>
-										<CardTitle>Quick capture</CardTitle>
+										<CardTitle>{localizedCopy.composer.title}</CardTitle>
 										<CardDescription>
-											Type, tag, and drop a memo without leaving the keyboard.
+											{localizedCopy.composer.description}
 										</CardDescription>
 									</div>
 									<div className="hidden items-center gap-2 text-xs text-slate-500 sm:flex dark:text-slate-300">
 										<Filter className="h-4 w-4" />
-										Autosaves to your browser
+										{localizedCopy.composer.autosave}
 									</div>
 								</div>
 							</CardHeader>
 							<CardContent className="space-y-4">
 								<Textarea
-									placeholder="Write a thought, link, or checklist..."
+									placeholder={localizedCopy.composer.placeholder}
 									value={content}
 									onChange={(event) => setContent(event.target.value)}
 									rows={4}
@@ -813,7 +1131,7 @@ export default function Home() {
 								<div className="grid gap-3 md:grid-cols-3">
 									<div className="space-y-1">
 										<p className="text-xs font-medium text-slate-500 dark:text-slate-300">
-											Category
+											{localizedCopy.composer.categoryLabel}
 										</p>
 										<div className="flex flex-wrap gap-2">
 											{(Object.keys(categoryAccent) as MemoCategory[]).map(
@@ -826,7 +1144,7 @@ export default function Home() {
 														className="capitalize"
 														onClick={() => setCategory(type)}
 													>
-														{type}
+														{localizedCopy.categoryLabels[type]}
 													</Button>
 												),
 											)}
@@ -834,10 +1152,10 @@ export default function Home() {
 									</div>
 									<div className="space-y-1">
 										<p className="text-xs font-medium text-slate-500 dark:text-slate-300">
-											Tags
+											{localizedCopy.composer.tagsLabel}
 										</p>
 										<Input
-											placeholder="product, focus, idea"
+											placeholder={localizedCopy.composer.tagsPlaceholder}
 											value={tagsInput}
 											onChange={(event) => setTagsInput(event.target.value)}
 										/>
@@ -845,10 +1163,10 @@ export default function Home() {
 									<div className="flex items-center justify-between rounded-xl border bg-white/70 px-4 py-3 dark:border-white/10 dark:bg-white/5">
 										<div>
 											<p className="text-sm font-medium text-slate-800 dark:text-white">
-												Pin on top
+												{localizedCopy.composer.pinTitle}
 											</p>
 											<p className="text-xs text-slate-500 dark:text-slate-300">
-												Keep this memo in view
+												{localizedCopy.composer.pinHint}
 											</p>
 										</div>
 										<Switch
@@ -866,16 +1184,12 @@ export default function Home() {
 											className="gap-2"
 											onClick={() =>
 												handleTemplate({
-													content:
-														"Today I learned: small commits keep me shipping.",
-													tags: ["journal", "learning"],
-													category: "journal",
-													pinned: false,
+													...localizedCopy.composer.journalSeedTemplate,
 												})
 											}
 										>
 											<Flame className="h-4 w-4" />
-											Journal seed
+											{localizedCopy.composer.journalSeedLabel}
 										</Button>
 										<Button
 											type="button"
@@ -883,16 +1197,12 @@ export default function Home() {
 											className="gap-2"
 											onClick={() =>
 												handleTemplate({
-													content:
-														"Task: close the feedback loop for the next memo drop.",
-													tags: ["task", "follow-up"],
-													category: "task",
-													pinned: true,
+													...localizedCopy.composer.taskSeedTemplate,
 												})
 											}
 										>
 											<Pin className="h-4 w-4" />
-											Pin a task
+											{localizedCopy.composer.taskSeedLabel}
 										</Button>
 									</div>
 									<Button
@@ -902,133 +1212,151 @@ export default function Home() {
 										onClick={handleSave}
 									>
 										<Sparkles className="h-4 w-4" />
-										Save memo
+										{localizedCopy.composer.save}
 									</Button>
 								</div>
 							</CardContent>
 						</Card>
 
 						<Card className="border border-slate-200/70 bg-white/70 shadow-sm backdrop-blur dark:border-white/10 dark:bg-white/5">
-							<CardHeader className="pb-3">
+							<CardHeader className="pb-2">
 								<div className="flex items-center justify-between gap-3">
-									<div>
-										<CardTitle className="flex items-center gap-2">
-											<LayoutList
-												className={cn("h-5 w-5", activeTheme.heroIcon)}
-											/>
-											Live stream
-										</CardTitle>
-										<CardDescription>
-											Filtered memos show up instantly with tags and meta.
-										</CardDescription>
-									</div>
-									<div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-300">
-										<Tag className="h-4 w-4" />
-										{activeTag ?? "Any tag"}
-									</div>
+									<CardTitle className="flex items-center gap-2">
+										<LayoutList className={cn("h-5 w-5", activeTheme.heroIcon)} />
+										{localizedCopy.memoList.title}
+									</CardTitle>
+									<Badge variant="secondary" className="text-xs">
+										{filteredMemos.length} {localizedCopy.memoList.itemsSuffix}
+									</Badge>
 								</div>
+								<CardDescription>
+									{localizedCopy.memoList.description}
+								</CardDescription>
 							</CardHeader>
 							<CardContent className="space-y-4">
+								<div className="flex flex-wrap items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
+									<div className="inline-flex items-center gap-2 rounded-full border border-dashed border-slate-300/80 bg-white/80 px-3 py-1.5 dark:border-white/10 dark:bg-white/5">
+										<Filter className="h-4 w-4" />
+										<span>{activeFilterLabel}</span>
+									</div>
+									<div className="inline-flex items-center gap-2 rounded-full border border-dashed border-slate-300/80 bg-white/80 px-3 py-1.5 dark:border-white/10 dark:bg-white/5">
+										<Tag className="h-4 w-4" />
+										<span>
+											{activeTag ?? localizedCopy.memoList.allTagsLabel}
+										</span>
+									</div>
+									<div className="inline-flex items-center gap-2 rounded-full border border-dashed border-slate-300/80 bg-white/80 px-3 py-1.5 dark:border-white/10 dark:bg-white/5">
+										<CalendarIcon className="h-4 w-4" />
+										<span>{dateRangeLabel}</span>
+									</div>
+								</div>
 								{filteredMemos.length === 0 ? (
 									<div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-slate-300 bg-slate-100/60 px-4 py-6 text-center text-sm text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-200">
 										<Sparkles className="h-5 w-5" />
-										<p>No memos match this view. Add one or clear filters.</p>
+										<p>{localizedCopy.memoList.empty}</p>
+										<p className="text-xs text-slate-500 dark:text-slate-300">
+											{localizedCopy.memoList.emptyHint}
+										</p>
 									</div>
 								) : (
-									filteredMemos.map((memo) => (
-										<div
-											key={memo.id}
-											className="rounded-2xl border bg-white/80 px-4 py-4 shadow-sm ring-1 ring-slate-200/60 transition hover:-translate-y-1 hover:shadow-md dark:border-white/10 dark:bg-white/5 dark:ring-white/5"
-										>
-											<div className="flex flex-wrap items-center justify-between gap-3">
-												<div className="flex items-center gap-2">
-													<span
-														className={cn(
-															"inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold capitalize",
-															categoryAccent[memo.category],
-														)}
-													>
-														{memo.category}
-													</span>
-													{memo.pinned ? (
-														<span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-1 text-xs font-medium text-amber-800 dark:bg-amber-500/20 dark:text-amber-100">
-															<Pin className="h-3 w-3" />
-															Pinned
-														</span>
-													) : null}
-												</div>
-												<div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-300">
-													<CalendarIcon className="h-4 w-4" />
-													<span>
-														{formatDistanceToNow(new Date(memo.createdAt), {
-															addSuffix: true,
-														})}
-													</span>
-													<DropdownMenu>
-														<DropdownMenuTrigger asChild>
-															<Button
-																variant="ghost"
-																size="icon"
-																className="h-8 w-8 text-slate-500 hover:text-slate-900 dark:text-slate-200 dark:hover:text-white"
-																aria-label="更多操作"
-															>
-																<MoreHorizontal className="h-4 w-4" />
-															</Button>
-														</DropdownMenuTrigger>
-														<DropdownMenuContent align="end">
-															<DropdownMenuItem
-																className="gap-2"
-																onClick={() => handleCopy(memo.content)}
-															>
-																<Copy className="h-4 w-4" />
-																复制内容
-															</DropdownMenuItem>
-															<DropdownMenuItem
-																className="gap-2"
-																onClick={() => handleEditMemo(memo)}
-															>
-																<Edit className="h-4 w-4" />
-																编辑到输入区
-															</DropdownMenuItem>
-														</DropdownMenuContent>
-													</DropdownMenu>
-												</div>
-											</div>
-											<div className="mt-3 text-sm leading-relaxed text-slate-800 dark:text-slate-100 [&>*]:mb-3 [&>*:last-child]:mb-0 [&_code]:rounded-md [&_code]:bg-slate-100 [&_code]:px-1.5 [&_code]:py-0.5 [&_pre]:overflow-x-auto [&_pre]:rounded-xl [&_pre]:bg-slate-100 [&_pre]:p-3 dark:[&_code]:bg-white/10 dark:[&_pre]:bg-white/5">
-												<ReactMarkdown remarkPlugins={[remarkGfm]}>
-													{memo.content}
-												</ReactMarkdown>
-											</div>
-											<div className="mt-3 flex flex-wrap items-center gap-2">
-												{memo.tags.length === 0 ? (
-													<Badge variant="outline" className="text-xs">
-														No tags
-													</Badge>
-												) : (
-													memo.tags.map((tag) => (
-														<Badge
-															key={tag}
-															variant="secondary"
-															className="flex items-center gap-1 text-xs capitalize"
+									<div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+										{filteredMemos.map((memo) => (
+											<div
+												key={memo.id}
+												className="flex h-full flex-col rounded-2xl border bg-white/80 px-4 py-4 shadow-sm ring-1 ring-slate-200/60 transition hover:-translate-y-1 hover:shadow-md dark:border-white/10 dark:bg-white/5 dark:ring-white/5"
+											>
+												<div className="flex flex-wrap items-center justify-between gap-3">
+													<div className="flex items-center gap-2">
+														<span
+															className={cn(
+																"inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold capitalize",
+																categoryAccent[memo.category],
+															)}
 														>
-															<Tag className="h-3 w-3" />
-															{tag}
-														</Badge>
-													))
-												)}
-											</div>
-											<Separator className="my-3" />
-											<div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-300">
-												<div className="flex items-center gap-2">
-													<BookmarkCheck className="h-4 w-4" />
-													{memo.category === "task" ? "Actionable" : "Noted"}
+															{localizedCopy.categoryLabels[memo.category]}
+														</span>
+														{memo.pinned ? (
+															<span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-1 text-xs font-medium text-amber-800 dark:bg-amber-500/20 dark:text-amber-100">
+																<Pin className="h-3 w-3" />
+																{localizedCopy.memoList.pinned}
+															</span>
+														) : null}
+													</div>
+													<div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-300">
+														<CalendarIcon className="h-4 w-4" />
+														<span>
+															{formatDistanceToNow(new Date(memo.createdAt), {
+																addSuffix: true,
+															})}
+														</span>
+														<DropdownMenu>
+															<DropdownMenuTrigger asChild>
+																<Button
+																	variant="ghost"
+																	size="icon"
+																	className="h-8 w-8 text-slate-500 hover:text-slate-900 dark:text-slate-200 dark:hover:text-white"
+																	aria-label="更多操作"
+																>
+																	<MoreHorizontal className="h-4 w-4" />
+																</Button>
+															</DropdownMenuTrigger>
+															<DropdownMenuContent align="end">
+																<DropdownMenuItem
+																	className="gap-2"
+																	onClick={() => handleCopy(memo.content)}
+																>
+																	<Copy className="h-4 w-4" />
+																	{localizedCopy.menu.copyContent}
+																</DropdownMenuItem>
+																<DropdownMenuItem
+																	className="gap-2"
+																	onClick={() => handleEditMemo(memo)}
+																>
+																	<Edit className="h-4 w-4" />
+																	{localizedCopy.menu.editToInput}
+																</DropdownMenuItem>
+															</DropdownMenuContent>
+														</DropdownMenu>
+													</div>
 												</div>
-												<span className="font-medium text-slate-700 dark:text-slate-200">
-													{format(new Date(memo.createdAt), "MMM d, HH:mm")}
-												</span>
+												<div className="mt-3 flex-1 text-sm leading-relaxed text-slate-800 dark:text-slate-100 [&>*]:mb-3 [&>*:last-child]:mb-0 [&_code]:rounded-md [&_code]:bg-slate-100 [&_code]:px-1.5 [&_code]:py-0.5 [&_pre]:overflow-x-auto [&_pre]:rounded-xl [&_pre]:bg-slate-100 [&_pre]:p-3 dark:[&_code]:bg-white/10 dark:[&_pre]:bg-white/5">
+													<ReactMarkdown remarkPlugins={[remarkGfm]}>
+														{memo.content}
+													</ReactMarkdown>
+												</div>
+												<div className="mt-3 flex flex-wrap items-center gap-2">
+													{memo.tags.length === 0 ? (
+														<Badge variant="outline" className="text-xs">
+															{localizedCopy.memoList.noTags}
+														</Badge>
+													) : (
+														memo.tags.map((tag) => (
+															<Badge
+																key={tag}
+																variant="secondary"
+																className="flex items-center gap-1 text-xs capitalize"
+															>
+																<Tag className="h-3 w-3" />
+																{tag}
+															</Badge>
+														))
+													)}
+												</div>
+												<Separator className="my-3" />
+												<div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-300">
+													<div className="flex items-center gap-2">
+														<BookmarkCheck className="h-4 w-4" />
+														{memo.category === "task"
+															? localizedCopy.memoList.actionable
+															: localizedCopy.memoList.noted}
+													</div>
+													<span className="font-medium text-slate-700 dark:text-slate-200">
+														{format(new Date(memo.createdAt), "MMM d, HH:mm")}
+													</span>
+												</div>
 											</div>
-										</div>
-									))
+										))}
+									</div>
 								)}
 							</CardContent>
 						</Card>
@@ -1039,7 +1367,7 @@ export default function Home() {
 				<div className="group relative">
 					<button
 						type="button"
-						aria-label={localizedCopy.preferences}
+						aria-label={localizedCopy.preferences.title}
 						className={cn(
 							"flex h-11 w-11 items-center justify-center rounded-full text-white shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
 							activeTheme.strongBg,
@@ -1050,26 +1378,26 @@ export default function Home() {
 					<div
 						className="pointer-events-none absolute bottom-14 left-0 w-[min(320px,calc(100vw-2rem))] translate-y-2 opacity-0 transition-all duration-200 group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:translate-y-0 group-focus-within:opacity-100"
 						role="region"
-						aria-label={localizedCopy.preferences}
+						aria-label={localizedCopy.preferences.title}
 					>
 						<div className="rounded-2xl border border-slate-200/80 bg-white/90 p-4 shadow-xl backdrop-blur-md dark:border-white/10 dark:bg-slate-900/85">
 							<div className="flex items-center justify-between gap-2">
 								<div>
 									<p className="text-xs font-semibold uppercase text-slate-500 dark:text-slate-300">
-										{localizedCopy.preferences}
+										{localizedCopy.preferences.title}
 									</p>
 									<p className="text-sm text-slate-600 dark:text-slate-300">
-										{localizedCopy.preferencesHint}
+										{localizedCopy.preferences.hint}
 									</p>
 								</div>
 								<Badge variant="secondary" className="text-[11px]">
-									{language === "en" ? "EN" : "中文"}
+									{localizedCopy.preferences.badge}
 								</Badge>
 							</div>
 							<div className="mt-3 space-y-3">
 								<div className="space-y-2">
 									<p className="text-xs font-medium text-slate-500 dark:text-slate-300">
-										{localizedCopy.themeLabel}
+										{localizedCopy.preferences.themeLabel}
 									</p>
 									<div className="flex flex-wrap gap-2">
 										{(Object.keys(themePresets) as AccentKey[]).map((key) => {
@@ -1107,7 +1435,7 @@ export default function Home() {
 								</div>
 								<div className="space-y-2">
 									<p className="text-xs font-medium text-slate-500 dark:text-slate-300">
-										{localizedCopy.languageLabel}
+										{localizedCopy.preferences.languageLabel}
 									</p>
 									<div className="flex gap-2">
 										{(["en", "zh"] as LanguageOption[]).map((option) => (
@@ -1122,7 +1450,7 @@ export default function Home() {
 														: "border-slate-200/70 bg-white/80 text-slate-700 dark:bg-white/5 dark:text-slate-200",
 												)}
 											>
-												{option === "en" ? "English" : "中文"}
+												{localizedCopy.preferences.languageNames[option]}
 											</button>
 										))}
 									</div>
